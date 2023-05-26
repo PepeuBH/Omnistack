@@ -17,7 +17,23 @@ module.exports = {
 
     //função para listar todos os casos 
     async list(request, response) {
-        const incidents = await connection('incidents').select('*'); //seleciona todas os casos do BD
+        const { page = 1 } = request.query;//lógica para listar 5 casos por página
+
+        const [count] = await connection('incidents').count();
+
+        const incidents = await connection('incidents')
+            .join('ongs', 'ongs.id', '=', 'incidents.ong_id') //retorna todos os dados da ONG (juntando todas as tabelas)
+            .limit(5)//lógica para listar 5 casos por página
+            .offset((page - 1) * 5)//lógica para listar 5 casos por página
+            .select(['incidents.*',
+                'ongs.name',
+                'ongs.email',
+                'ongs.whatsapp',
+                'ongs.city',
+                'ongs.uf'
+            ]);
+
+        response.header('X-Total-Count', count['count(*)'])
 
         return response.json(incidents);
     },
